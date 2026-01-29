@@ -37,52 +37,33 @@ export interface Location {
   address?: string
 }
 
-// Web Audio API alarm sound generator
+// Alarm sound player using custom MP3 file
+// To change the alarm sound, replace /alarm.mp3 in the public folder
+const ALARM_SOUND_PATH = '/loud.mp3'
+
 class AlarmSound {
-  private audioContext: AudioContext | null = null
-  private oscillator: OscillatorNode | null = null
-  private gainNode: GainNode | null = null
+  private audio: HTMLAudioElement | null = null
   private isPlaying = false
-  private intervalId: ReturnType<typeof setInterval> | null = null
 
   start() {
     if (this.isPlaying) return
     
-    this.audioContext = new (window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
+    this.audio = new Audio(ALARM_SOUND_PATH)
+    this.audio.loop = true
+    this.audio.volume = 0.8
     this.isPlaying = true
     
-    this.playBeep()
-    this.intervalId = setInterval(() => this.playBeep(), 800)
-  }
-
-  private playBeep() {
-    if (!this.audioContext || !this.isPlaying) return
-
-    const oscillator = this.audioContext.createOscillator()
-    const gainNode = this.audioContext.createGain()
-
-    oscillator.connect(gainNode)
-    gainNode.connect(this.audioContext.destination)
-
-    oscillator.frequency.value = 880 // A5 note
-    oscillator.type = 'sine'
-
-    gainNode.gain.setValueAtTime(0.5, this.audioContext.currentTime)
-    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.5)
-
-    oscillator.start(this.audioContext.currentTime)
-    oscillator.stop(this.audioContext.currentTime + 0.5)
+    this.audio.play().catch((error) => {
+      console.error('Failed to play alarm sound:', error)
+    })
   }
 
   stop() {
     this.isPlaying = false
-    if (this.intervalId) {
-      clearInterval(this.intervalId)
-      this.intervalId = null
-    }
-    if (this.audioContext) {
-      this.audioContext.close()
-      this.audioContext = null
+    if (this.audio) {
+      this.audio.pause()
+      this.audio.currentTime = 0
+      this.audio = null
     }
   }
 }
